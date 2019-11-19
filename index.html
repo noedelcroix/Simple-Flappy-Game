@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>The Flappy Game</title>
+</head>
+
+<body>
+    <div id="points">0</div>
+    <div id="flappy"></div>
+    <div id="obstacle">
+        <div id="espace"></div>
+    </div>
+
+    <div id="over">
+        <h1>Game Over !</h1>
+        <span>Score : <span id="ScorePoints"></span></span>
+        <span>Meilleur Score : <span id="ScoreBest"></span></span>
+        <input type="button" value="Rejouer" id="rejouer" onclick="window.location.reload()" />
+    </div>
+
+    <style>
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            background: ivory;
+            overflow: hidden;
+        }
+
+        #flappy {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            background: black;
+            width: 3vw;
+            height: 3vw;
+            z-index: 999;
+        }
+
+        #obstacle {
+            background: black;
+            height: 100%;
+            width: 3vw;
+            position: absolute;
+            top: 0;
+            right: 0;
+        }
+
+        #espace {
+            background: ivory;
+            width: 100%;
+            height: 20vw;
+            margin-top: 100px;
+        }
+
+        #points {
+            position: fixed;
+            top: 2%;
+            right: 2%;
+            padding: 1% 3%;
+            background-color: yellow;
+            z-index: 999;
+        }
+
+        #over {
+            position: fixed;
+            width: 80%;
+            height: 80%;
+            align-items: center;
+            justify-content: center;
+            background-color: yellow;
+            flex-direction: column;
+            display: none;
+            z-index: 1000;
+            top: 10%;
+            left: 10%;
+        }
+
+        #rejouer{
+            margin-top: 2%;
+        }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"
+        integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+    <script type="text/javascript">
+        const detectCollision = () => {
+            var hero = {
+                x: $("#flappy").offset().left,
+                y: $("#flappy").offset().top,
+                width: $("#flappy").width(),
+                height: $("#flappy").height()
+            }
+            var obstacle = {
+                x: $("#espace").offset().left,
+                y: $("#espace").offset().top,
+                width: $("#espace").width(),
+                height: $("#espace").height()
+            }
+            if (hero.x + hero.width >= obstacle.x && hero.x <= obstacle.x + obstacle.width) {
+                if (hero.y < obstacle.y + obstacle.height && hero.height + hero.y > obstacle.y) {
+
+                } else {
+                    console.log(hero);
+                    console.log(obstacle);
+                    over();
+                }
+            }
+        }
+
+        const over = () => {
+            $("#obstacle").stop(false);
+            $("#flappy").stop(false);
+            clearInterval(chuteFlappyInterval);
+            if(readBest()[1] == undefined){
+                setBest();
+            }
+            if (readBest()[1] < points) {
+                setBest();
+            }
+
+            $("#ScorePoints").html(points);
+            $("#ScoreBest").html(readBest()[1]);
+            $("#over").css('display', 'flex');
+        }
+
+        const deplacementObstacle = () => {
+            $("#obstacle").animate({
+                right: "100%"
+            }, 4500 / (points / 3 + 1), "linear", () => {
+                points += 1;
+                $("#points").html(points);
+                $("#espace").css("margin-top", Math.random() * 500 - 50 + "px");
+                $("#obstacle").css("right", "0");
+                deplacementObstacle();
+            });
+        }
+
+        const chuteFlappy = () => {
+            $("#flappy").css("top", parseInt($("#flappy").css("top").replace("px", ""), 10) + 5 + "px");
+            if ($("#flappy").offset().top <= 0 || $("#flappy").offset().top >= $(window).height()) {
+                console.log("114");
+                over();
+            }
+        }
+
+        const setBest = () => {
+            var d = new Date();
+            d.setTime(d.getTime() + (365 * 24 * 60 * 60 * 1000));
+            var expires = "expires=" + d.toUTCString();
+            document.cookie = "Best=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;SameSite=None";
+            document.cookie = "Best=" + username + "#" + points + ";Expires=" + expires + ";path=/;SameSite=None";
+        }
+
+        const readBest = () => {
+            var name = "Best=";
+            var decodedCookie = decodeURIComponent(document.cookie);
+            var ca = decodedCookie.split(';');
+            for (var i = 0; i < ca.length; i++) {
+                var c = ca[i];
+                while (c.charAt(0) == ' ') {
+                    c = c.substring(1);
+                }
+                if (c.indexOf(name) == 0) {
+                    return c.substring(name.length, c.length).split("#");
+                }
+            }
+            return "";
+
+        }
+
+        const readUsername = () => {
+            var name = "username=";
+            var decodedCookie = decodeURIComponent(document.cookie);
+            var ca = decodedCookie.split(';');
+            for (var i = 0; i < ca.length; i++) {
+                var c = ca[i];
+                while (c.charAt(0) == ' ') {
+                    c = c.substring(1);
+                }
+                if (c.indexOf(name) == 0) {
+                    return c.substring(name.length, c.length);
+                }
+            }
+            return "";
+
+        }
+
+        if (readUsername() != "") {
+            username = readUsername();
+        } else {
+            username = prompt("Username");
+            document.cookie = "username=" + username + ";path=/;SameSite=None";
+        }
+        points = 0;
+
+        flappyX = 0;
+        flappyY = 0;
+        $(document).ready(() => {
+            $(document).keydown((event) => {
+                console.log(event.keyCode);
+                $("#flappy").animate({
+                    top: parseInt($("#flappy").css("top").replace("px", ""), 10) - 200 + "px"
+                }, 50, "linear");
+            });
+
+            $(document).on("click", (event) => {
+                console.log(event.keyCode);
+                $("#flappy").animate({
+                    top: parseInt($("#flappy").css("top").replace("px", ""), 10) - 200 + "px"
+                }, 50, "linear");
+            });
+            deplacementObstacle();
+            chuteFlappyInterval = window.setInterval(() => {
+                chuteFlappy();
+                detectCollision();
+            }, 15);
+        });
+    </script>
+</body>
+
+</html>
